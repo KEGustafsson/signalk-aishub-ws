@@ -332,7 +332,8 @@ const mappings = [
     path: "sensors.ais.class",
     key: "MMSI",
     conversion: function(vessel, val) {
-      return (vessel.IMO && Number(vessel.IMO) !== 0) ? "A" : "B"
+      var imo = Number(vessel.IMO)
+      return Number.isFinite(imo) && imo !== 0 ? "A" : "B"
     }
   },
   {

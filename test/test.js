@@ -35,4 +35,22 @@ assert.strictEqual(
   'missing IMO maps to class B'
 )
 
+assert.strictEqual(
+  classMapping.conversion({ MMSI: 123456789, IMO: 'N/A' }, 123456789),
+  'B',
+  'non-numeric IMO placeholder maps to class B'
+)
+
+assert.strictEqual(
+  classMapping.conversion({ MMSI: 123456789, IMO: 'UNKNOWN' }, 123456789),
+  'B',
+  'non-numeric IMO text maps to class B'
+)
+
+assert.strictEqual(
+  classMapping.conversion({ MMSI: 123456789, IMO: '' }, 123456789),
+  'B',
+  'empty IMO string maps to class B'
+)
+
 console.log('All tests passed.')
