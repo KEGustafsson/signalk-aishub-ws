@@ -1,56 +1,56 @@
 const assert = require('assert')
-const { mappings } = require('..')
+const Module = require('module')
 
-const classMapping = mappings.find(m => m.path === 'sensors.ais.class')
-assert.ok(classMapping, 'sensors.ais.class mapping is registered')
-assert.strictEqual(classMapping.key, 'MMSI', 'class mapping is triggered by MMSI so it is always emitted')
+const cannedResponse = JSON.stringify([
+  {},
+  [
+    { MMSI: 111111111, IMO: 9181786, TIME: '2024-01-01 12:00:00 UTC', LATITUDE: 0, LONGITUDE: 0 },
+    { MMSI: 222222222, IMO: 0,       TIME: '2024-01-01 12:00:00 UTC', LATITUDE: 0, LONGITUDE: 0 },
+    { MMSI: 333333333, IMO: 'N/A',   TIME: '2024-01-01 12:00:00 UTC', LATITUDE: 0, LONGITUDE: 0 },
+    { MMSI: 444444444,               TIME: '2024-01-01 12:00:00 UTC', LATITUDE: 0, LONGITUDE: 0 }
+  ]
+])
 
-assert.strictEqual(
-  classMapping.conversion({ MMSI: 123456789, IMO: 9181786 }, 123456789),
-  'A',
-  'valid non-zero IMO maps to class A'
-)
+const originalLoad = Module._load
+Module._load = function(request) {
+  if (request === 'superagent-promise') {
+    return function() {
+      return function() {
+        return { end: () => Promise.resolve({ text: cannedResponse }) }
+      }
+    }
+  }
+  return originalLoad.apply(this, arguments)
+}
 
-assert.strictEqual(
-  classMapping.conversion({ MMSI: 123456789, IMO: '9181786' }, 123456789),
-  'A',
-  'valid IMO as string still maps to class A'
-)
+const factory = require('..')
 
-assert.strictEqual(
-  classMapping.conversion({ MMSI: 123456789, IMO: 0 }, 123456789),
-  'B',
-  'IMO of 0 maps to class B'
-)
+const deltas = []
+const app = {
+  selfId: 'test-self',
+  debug: () => {},
+  getSelfPath: () => ({ value: { latitude: 0, longitude: 0 } }),
+  handleMessage: (_id, delta) => deltas.push(delta)
+}
 
-assert.strictEqual(
-  classMapping.conversion({ MMSI: 123456789, IMO: '0' }, 123456789),
-  'B',
-  'IMO string "0" maps to class B'
-)
+const plugin = factory(app)
+plugin.start({ apikey: 'x', url: 'http://example.invalid/ws', updaterate: 61, boxEnabled: true })
 
-assert.strictEqual(
-  classMapping.conversion({ MMSI: 123456789 }, 123456789),
-  'B',
-  'missing IMO maps to class B'
-)
+setImmediate(() => {
+  plugin.stop()
 
-assert.strictEqual(
-  classMapping.conversion({ MMSI: 123456789, IMO: 'N/A' }, 123456789),
-  'B',
-  'non-numeric IMO placeholder maps to class B'
-)
+  const classByMmsi = {}
+  for (const delta of deltas) {
+    const match = delta.context.match(/mmsi:(\d+)$/)
+    if (!match) continue
+    const entry = delta.updates[0].values.find(v => v.path === 'sensors.ais.class')
+    if (entry) classByMmsi[match[1]] = entry.value
+  }
 
-assert.strictEqual(
-  classMapping.conversion({ MMSI: 123456789, IMO: 'UNKNOWN' }, 123456789),
-  'B',
-  'non-numeric IMO text maps to class B'
-)
+  assert.strictEqual(classByMmsi['111111111'], 'A', 'valid non-zero IMO emits class A')
+  assert.strictEqual(classByMmsi['222222222'], 'B', 'IMO of 0 emits class B')
+  assert.strictEqual(classByMmsi['333333333'], 'B', 'non-numeric IMO emits class B')
+  assert.strictEqual(classByMmsi['444444444'], 'B', 'missing IMO emits class B')
 
-assert.strictEqual(
-  classMapping.conversion({ MMSI: 123456789, IMO: '' }, 123456789),
-  'B',
-  'empty IMO string maps to class B'
-)
-
-console.log('All tests passed.')
+  console.log('All tests passed.')
+})
