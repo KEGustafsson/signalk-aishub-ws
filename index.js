@@ -462,6 +462,7 @@ const mappings = [
   }
 ]
 
+module.exports.mappings = mappings
 
 function mod(x,y){
   return x-y*Math.floor(x/y)
