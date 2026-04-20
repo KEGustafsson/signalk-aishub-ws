@@ -329,6 +329,13 @@ const mappings = [
     conversion: numberToString
   },
   {
+    path: "sensors.ais.class",
+    key: "MMSI",
+    conversion: function(vessel, val) {
+      return (vessel.IMO && Number(vessel.IMO) !== 0) ? "A" : "B"
+    }
+  },
+  {
     path: "navigation.courseOverGroundTrue",
     key: "COG",
     conversion: function(vessel, val) {
