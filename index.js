@@ -20,6 +20,7 @@ const agent = require('superagent-promise')(require('superagent'), Promise)
 const fs = require("fs");
 const _ = require('lodash')
 const schema = require('@signalk/signalk-schema')
+const moment = require('moment')
 
 const stateMapping = {
   0: 'motoring',
@@ -113,19 +114,6 @@ module.exports = function(app)
         return
       }
 
-      /*
-      var existing = app.signalk.root.vessels["urn:mrn:imo:mmsi:" + vessel.MMSI]
-
-      if ( existing )
-      {
-        var ts = _.get(existing, "navigation.position.timestamp")
-        if ( ts )
-        {
-          var existingDate = new Date(ts)
-          
-        }
-      }*/
-      
       app.debug("vessel delta:  %j", delta)
       app.handleMessage(plugin.id, delta)
     })
@@ -140,11 +128,21 @@ module.exports = function(app)
       return null
     }
     
+    const age = moment(convertTime(vessel, vessel.TIME))
+
+    var existing = app.getPath(context)
+    if (existing)
+    {
+      var previous = _.get(existing, "navigation.position.timestamp")
+      if (previous && moment(previous).isAfter(age))
+        return null;
+    }
+
     var delta = {
       "context": context,
       "updates": [
         {
-          "timestamp": convertTime(vessel, vessel.TIME),
+          "timestamp": age.toDate().toISOString(),
           "source": {
             "label": "aishub"
           },
