@@ -303,6 +303,13 @@ function numberToString(vessel, num)
   return '' + num
 }
 
+function getVesselClass(vessel) {
+  const imo = Number(vessel.IMO)
+  if (!Number.isInteger(imo)) return
+  if (imo === 0) return "B"
+  if (imo >= 1000000 && imo <= 9999999) return "A"
+}
+
 const mappings = [
   {
     path: "mmsi",
@@ -325,6 +332,11 @@ const mappings = [
     key: "IMO",
     root: true,
     conversion: numberToString
+  },
+  {
+    path: "sensors.ais.class",
+    key: "MMSI",
+    conversion: getVesselClass
   },
   {
     path: "navigation.courseOverGroundTrue",
