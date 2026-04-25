@@ -335,7 +335,7 @@ const mappings = [
   },
   {
     path: "sensors.ais.class",
-    key: "MMSI",
+    key: "IMO",
     conversion: getVesselClass
   },
   {
