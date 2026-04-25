@@ -305,6 +305,13 @@ function numberToString(vessel, num)
   return '' + num
 }
 
+function getVesselClass(vessel) {
+  const imo = Number(vessel.IMO)
+  if (!Number.isInteger(imo)) return
+  if (imo === 0) return "B"
+  if (imo >= 1000000 && imo <= 9999999) return "A"
+}
+
 const mappings = [
   {
     path: "mmsi",
@@ -331,10 +338,7 @@ const mappings = [
   {
     path: "sensors.ais.class",
     key: "MMSI",
-    conversion: function(vessel, val) {
-      var imo = Number(vessel.IMO)
-      return Number.isFinite(imo) && imo !== 0 ? "A" : "B"
-    }
+    conversion: getVesselClass
   },
   {
     path: "navigation.courseOverGroundTrue",
@@ -504,4 +508,3 @@ function calc_boundingbox(opions, position)
     'lonmax': max_lon.longitude
   }
 }
-
