@@ -304,10 +304,9 @@ function numberToString(vessel, num)
 }
 
 function getVesselClass(vessel) {
-  const imo = Number(vessel.IMO)
-  if (imo === 0) return "B"
+  const imo = Number.parseInt(vessel.IMO, 10)
   if (imo >= 1000000 && imo <= 9999999) return "A"
-  return null
+  return "B"
 }
 
 const mappings = [
